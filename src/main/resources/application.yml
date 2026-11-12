@@ -1,0 +1,19 @@
+server:
+  port: "${PORT:3001}"
+
+spring:
+  datasource:
+    url: "jdbc:mysql://${MYSQLHOST:${HOST:localhost}}:${MYSQLPORT:3306}/${MYSQLDATABASE:${DATABASE_DEV:uprophet}}?serverTimezone=UTC"
+    username: "${MYSQLUSER:${USER_DEV:}}"
+    password: "${MYSQLPASSWORD:${PASSWORD_DEV:}}"
+  jpa:
+    hibernate:
+      ddl-auto: none
+  flyway:
+    enabled: false
+
+app:
+  resend:
+    api-key: "${RESEND_API_KEY:}"
+  cors:
+    allowed-origins: "${ALLOWED_ORIGINS:http://localhost:3000,https://uprophet.com}"
