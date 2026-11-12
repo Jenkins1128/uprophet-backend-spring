@@ -17,3 +17,11 @@ app:
     api-key: "${RESEND_API_KEY:}"
   cors:
     allowed-origins: "${ALLOWED_ORIGINS:http://localhost:3000,https://uprophet.com}"
+  jwt:
+    access-token-secret: "${ACCESS_TOKEN_SECRET:}"
+    access-token-life: "${ACCESS_TOKEN_LIFE:1h}"
+    refresh-token-secret: "${REFRESH_TOKEN_SECRET:}"
+    refresh-token-life: "${REFRESH_TOKEN_LIFE:7d}"
+  password:
+    site-key: "${SITE_KEY:}"
+    nonce-salt: "${NONCE_SALT:}"
