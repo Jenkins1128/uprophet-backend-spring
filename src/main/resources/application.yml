@@ -2,6 +2,9 @@ server:
   port: "${PORT:3001}"
 
 spring:
+  config:
+    # application-local.yml overrides this file unless the prod profile is active.
+    import: optional:classpath:application-local.yml
   datasource:
     url: "jdbc:mysql://${MYSQLHOST:${HOST:localhost}}:${MYSQLPORT:3306}/${MYSQLDATABASE:${DATABASE_DEV:uprophet}}?serverTimezone=UTC"
     username: "${MYSQLUSER:${USER_DEV:}}"
