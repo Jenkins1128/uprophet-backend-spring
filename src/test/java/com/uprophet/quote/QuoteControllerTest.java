@@ -1,5 +1,6 @@
 package com.uprophet.quote;
 
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -20,7 +21,9 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.uprophet.auth.LoginRepository;
 import com.uprophet.auth.security.AuthUser;
+import com.uprophet.quote.dto.CommentResponse;
 import com.uprophet.quote.dto.HomeQuoteResponse;
+import com.uprophet.user.NotificationService;
 import com.uprophet.user.UserRepository;
 import com.uprophet.user.UserService;
 
@@ -40,6 +43,9 @@ class QuoteControllerTest {
 
     @MockitoBean
     private UserService userService;
+
+    @MockitoBean
+    private NotificationService notificationService;
 
     @MockitoBean
     private UserRepository userRepository;
@@ -137,5 +143,60 @@ class QuoteControllerTest {
                         .content("{\"title\":\"\",\"quote\":\"World\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Validation failed"));
+    }
+
+    @Test
+    void likeWithoutACookieIsUnauthorized() throws Exception {
+        mockMvc.perform(post("/api/like")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quoteId\":9}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Not authorized, no token"));
+    }
+
+    @Test
+    void likeAndUnlikeCallTheService() throws Exception {
+        var signedIn = authentication(new UsernamePasswordAuthenticationToken(
+                new AuthUser(42L, "ada"), null, List.of()));
+
+        mockMvc.perform(post("/api/like").with(signedIn)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quoteId\":9}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/unlike").with(signedIn)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quoteId\":9}"))
+                .andExpect(status().isOk());
+
+        verify(quoteService).like(42L, "ada", 9L);
+        verify(quoteService).unlike(42L, 9L);
+    }
+
+    @Test
+    void quoteAndCommentsReturnTheServiceResult() throws Exception {
+        when(quoteService.quote(42L, 9L)).thenReturn(
+                new HomeQuoteResponse(9L, "bea", "Title", "words", "2024-01-01 00:00:00", 2L, true));
+        when(quoteService.comments(9L)).thenReturn(List.of(
+                new CommentResponse(4L, "nice", "ada", "2024-02-02 00:00:00")));
+        when(quoteService.addComment("ada", 9L, "nice")).thenReturn(
+                new CommentResponse(4L, "nice", "ada", "2024-02-02 00:00:00"));
+        var signedIn = authentication(new UsernamePasswordAuthenticationToken(
+                new AuthUser(42L, "ada"), null, List.of()));
+
+        mockMvc.perform(get("/api/quotes/9").with(signedIn))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userName").value("bea"))
+                .andExpect(jsonPath("$.didLike").value(true));
+        mockMvc.perform(get("/api/quotes/9/comments").with(signedIn))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].comment").value("nice"))
+                .andExpect(jsonPath("$[0].commenter").value("ada"))
+                .andExpect(jsonPath("$[0].datePosted").value("2024-02-02 00:00:00"));
+        mockMvc.perform(post("/api/addComment").with(signedIn)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quoteId\":9,\"comment\":\"nice\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(4))
+                .andExpect(jsonPath("$.comment").value("nice"));
     }
 }

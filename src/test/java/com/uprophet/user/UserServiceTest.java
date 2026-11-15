@@ -7,17 +7,22 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
 
 import com.uprophet.user.dto.CurrentUserInfoResponse;
+import com.uprophet.user.dto.FavoriterResponse;
+import com.uprophet.user.dto.FavoritingResponse;
 import com.uprophet.user.dto.PhotoResponse;
 import com.uprophet.user.dto.SearchResultResponse;
 import com.uprophet.user.dto.UserInfoResponse;
@@ -30,6 +35,9 @@ class UserServiceTest {
 
     @Mock
     private FavoritingRepository favoritingRepository;
+
+    @Mock
+    private FavoriteNotificationRepository favoriteNotificationRepository;
 
     @InjectMocks
     private UserService userService;
@@ -137,6 +145,86 @@ class UserServiceTest {
 
         assertThat(userService.search("bea", "zzz")).isEmpty();
         verify(favoritingRepository, never()).findToUsersByFromUserAndToUserIn(any(), any());
+    }
+
+    @Test
+    void favoriteStoresTheFollowAndANotification() {
+        when(favoritingRepository.existsByFromUserAndToUser("ada", "bea")).thenReturn(false);
+        LocalDateTime before = LocalDateTime.now(ZoneOffset.UTC).withNano(0);
+
+        userService.favorite("ada", "bea");
+
+        ArgumentCaptor<Favoriting> follow = ArgumentCaptor.forClass(Favoriting.class);
+        verify(favoritingRepository).save(follow.capture());
+        assertThat(follow.getValue().getFromUser()).isEqualTo("ada");
+        assertThat(follow.getValue().getToUser()).isEqualTo("bea");
+        ArgumentCaptor<FavoriteNotification> notice = ArgumentCaptor.forClass(FavoriteNotification.class);
+        verify(favoriteNotificationRepository).save(notice.capture());
+        assertThat(notice.getValue().getNotice()).isEqualTo("ada favorited you.");
+        assertThat(notice.getValue().getToUser()).isEqualTo("bea");
+        assertThat(notice.getValue().getReadFlag()).isZero();
+        assertThat(notice.getValue().getDate()).isBetween(before, LocalDateTime.now(ZoneOffset.UTC).withNano(0).plusSeconds(1));
+    }
+
+    @Test
+    void favoriteDoesNothingWhenAlreadyFollowing() {
+        when(favoritingRepository.existsByFromUserAndToUser("ada", "bea")).thenReturn(true);
+
+        userService.favorite("ada", "bea");
+
+        verify(favoritingRepository, never()).save(any());
+        verify(favoriteNotificationRepository, never()).save(any());
+    }
+
+    @Test
+    void unfavoriteRemovesTheFollow() {
+        Favoriting follow = new Favoriting();
+        follow.setFromUser("ada");
+        follow.setToUser("bea");
+        when(favoritingRepository.findById(new FavoritingId("ada", "bea"))).thenReturn(Optional.of(follow));
+
+        userService.unfavorite("ada", "bea");
+
+        verify(favoritingRepository).delete(follow);
+    }
+
+    @Test
+    void unfavoriteDoesNothingWhenTheFollowIsMissing() {
+        when(favoritingRepository.findById(new FavoritingId("ada", "bea"))).thenReturn(Optional.empty());
+
+        userService.unfavorite("ada", "bea");
+
+        verify(favoritingRepository, never()).delete(any());
+    }
+
+    @Test
+    void favoritersMarkWhoTheSignedInUserAlreadyFollows() {
+        when(favoritingRepository.findFromUsersByToUser("bea")).thenReturn(List.of("ada", "cy"));
+        when(favoritingRepository.findToUsersByFromUserAndToUserIn("ada", List.of("ada", "cy")))
+                .thenReturn(List.of("cy"));
+
+        assertThat(userService.favoriters("ada", "bea")).containsExactly(
+                new FavoriterResponse("ada", "ada", false),
+                new FavoriterResponse("cy", "ada", true));
+    }
+
+    @Test
+    void favoritersSkipTheFollowLookupWhenNobodyFavoritedThem() {
+        when(favoritingRepository.findFromUsersByToUser("bea")).thenReturn(List.of());
+
+        assertThat(userService.favoriters("ada", "bea")).isEmpty();
+        verify(favoritingRepository, never()).findToUsersByFromUserAndToUserIn(any(), any());
+    }
+
+    @Test
+    void favoritingMarkWhoTheSignedInUserAlreadyFollows() {
+        when(favoritingRepository.findToUsersByFromUser("bea")).thenReturn(List.of("ada", "cy"));
+        when(favoritingRepository.findToUsersByFromUserAndToUserIn("ada", List.of("ada", "cy")))
+                .thenReturn(List.of("ada"));
+
+        assertThat(userService.favoriting("ada", "bea")).containsExactly(
+                new FavoritingResponse("ada", "ada", true),
+                new FavoritingResponse("cy", "ada", false));
     }
 
     private static User user(long id, String userName) {

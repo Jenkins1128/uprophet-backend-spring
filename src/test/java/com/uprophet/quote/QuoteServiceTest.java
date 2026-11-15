@@ -1,6 +1,7 @@
 package com.uprophet.quote;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
@@ -11,6 +12,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,6 +21,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.uprophet.common.error.ApiException;
+import com.uprophet.quote.dto.CommentResponse;
 import com.uprophet.quote.dto.HomeQuoteResponse;
 import com.uprophet.user.FavoritingRepository;
 
@@ -33,6 +37,12 @@ class QuoteServiceTest {
 
     @Mock
     private LikeRepository likeRepository;
+
+    @Mock
+    private CommentRepository commentRepository;
+
+    @Mock
+    private QuoteNotificationRepository quoteNotificationRepository;
 
     @InjectMocks
     private QuoteService quoteService;
@@ -146,6 +156,93 @@ class QuoteServiceTest {
                 saved.getValue().getDatePosted().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
                 0L,
                 false));
+    }
+
+    @Test
+    void likeSavesTheLikeAndANotification() {
+        when(likeRepository.existsById(new LikeId(42L, 9L))).thenReturn(false);
+
+        quoteService.like(42L, "ada", 9L);
+
+        ArgumentCaptor<Like> like = ArgumentCaptor.forClass(Like.class);
+        verify(likeRepository).save(like.capture());
+        assertThat(like.getValue().getUsersId()).isEqualTo(42L);
+        assertThat(like.getValue().getQuotesId()).isEqualTo(9L);
+        ArgumentCaptor<QuoteNotification> notice = ArgumentCaptor.forClass(QuoteNotification.class);
+        verify(quoteNotificationRepository).save(notice.capture());
+        assertThat(notice.getValue()).extracting("notice", "quotesId", "readFlag")
+                .containsExactly("ada liked your quote.", 9L, 0);
+    }
+
+    @Test
+    void unlikeRemovesTheLike() {
+        Like like = new Like();
+        like.setUsersId(42L);
+        like.setQuotesId(9L);
+        when(likeRepository.findById(new LikeId(42L, 9L))).thenReturn(Optional.of(like));
+
+        quoteService.unlike(42L, 9L);
+
+        verify(likeRepository).delete(like);
+    }
+
+    @Test
+    void quoteReturnsLikeState() {
+        when(quoteRepository.findById(9L)).thenReturn(Optional.of(
+                quote(9L, "bea", "Title", "words", LocalDateTime.of(2024, 1, 1, 0, 0, 0))));
+        when(likeRepository.countByQuoteIds(List.of(9L))).thenReturn(List.<Object[]>of(new Object[] {9L, 2L}));
+        when(likeRepository.findLikedQuoteIds(42L, List.of(9L))).thenReturn(List.of(9L));
+
+        assertThat(quoteService.quote(42L, 9L)).isEqualTo(
+                new HomeQuoteResponse(9L, "bea", "Title", "words", "2024-01-01 00:00:00", 2L, true));
+    }
+
+    @Test
+    void quoteIsNotFoundWhenTheIdIsMissing() {
+        when(quoteRepository.findById(9L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> quoteService.quote(42L, 9L))
+                .isInstanceOf(ApiException.class)
+                .extracting(error -> ((ApiException) error).status())
+                .isEqualTo(404);
+    }
+
+    @Test
+    void commentsKeepNewestIdFirst() {
+        when(commentRepository.findByQuotesIdOrderByIdDesc(9L)).thenReturn(List.of(
+                comment(4L, "second", "ada", LocalDateTime.of(2024, 2, 2, 0, 0, 0)),
+                comment(3L, "first", "bea", LocalDateTime.of(2024, 1, 1, 0, 0, 0))));
+
+        assertThat(quoteService.comments(9L)).containsExactly(
+                new CommentResponse(4L, "second", "ada", "2024-02-02 00:00:00"),
+                new CommentResponse(3L, "first", "bea", "2024-01-01 00:00:00"));
+    }
+
+    @Test
+    void addCommentStoresTheCommentAndANotification() {
+        when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
+            Comment comment = invocation.getArgument(0);
+            comment.setId(8L);
+            return comment;
+        });
+
+        CommentResponse created = quoteService.addComment("ada", 9L, "nice");
+
+        assertThat(created.id()).isEqualTo(8L);
+        assertThat(created.comment()).isEqualTo("nice");
+        assertThat(created.commenter()).isEqualTo("ada");
+        ArgumentCaptor<QuoteNotification> notice = ArgumentCaptor.forClass(QuoteNotification.class);
+        verify(quoteNotificationRepository).save(notice.capture());
+        assertThat(notice.getValue()).extracting("notice", "quotesId").containsExactly("ada commented on your quote.", 9L);
+    }
+
+    private static Comment comment(long id, String text, String commenter, LocalDateTime postedAt) {
+        Comment comment = new Comment();
+        comment.setId(id);
+        comment.setComment(text);
+        comment.setCommenter(commenter);
+        comment.setDatePosted(postedAt);
+        return comment;
     }
 
     private static Quote quote(long id, String userName, String title, String text, LocalDateTime postedAt) {

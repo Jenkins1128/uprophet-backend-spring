@@ -17,8 +17,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.uprophet.common.error.ApiException;
+import com.uprophet.quote.CommentRepository;
 import com.uprophet.quote.LikeRepository;
+import com.uprophet.quote.QuoteNotificationRepository;
 import com.uprophet.quote.QuoteRepository;
+import com.uprophet.user.FavoriteNotificationRepository;
 import com.uprophet.user.FavoritingRepository;
 import com.uprophet.user.UserRepository;
 
@@ -50,6 +53,15 @@ class AuthControllerTest {
 
     @MockitoBean
     private FavoritingRepository favoritingRepository;
+
+    @MockitoBean
+    private CommentRepository commentRepository;
+
+    @MockitoBean
+    private QuoteNotificationRepository quoteNotificationRepository;
+
+    @MockitoBean
+    private FavoriteNotificationRepository favoriteNotificationRepository;
 
     @Test
     void signinSetsTheAccessCookie() throws Exception {

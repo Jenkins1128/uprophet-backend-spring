@@ -17,10 +17,15 @@ import com.uprophet.quote.QuoteService;
 import com.uprophet.quote.dto.HomeQuoteResponse;
 import com.uprophet.user.dto.BioRequest;
 import com.uprophet.user.dto.CurrentUserInfoResponse;
+import com.uprophet.user.dto.FavoriterResponse;
+import com.uprophet.user.dto.FavoritingResponse;
+import com.uprophet.user.dto.NotificationCountResponse;
+import com.uprophet.user.dto.NotificationResponse;
 import com.uprophet.user.dto.PhotoRequest;
 import com.uprophet.user.dto.PhotoResponse;
 import com.uprophet.user.dto.SearchRequest;
 import com.uprophet.user.dto.SearchResultResponse;
+import com.uprophet.user.dto.ToUserRequest;
 import com.uprophet.user.dto.UserInfoResponse;
 import com.uprophet.user.dto.UsernameRequest;
 
@@ -35,10 +40,12 @@ public class UserController {
 
     private final QuoteService quoteService;
     private final UserService userService;
+    private final NotificationService notificationService;
 
-    public UserController(QuoteService quoteService, UserService userService) {
+    public UserController(QuoteService quoteService, UserService userService, NotificationService notificationService) {
         this.quoteService = quoteService;
         this.userService = userService;
+        this.notificationService = notificationService;
     }
 
     @GetMapping("/currentUser")
@@ -96,5 +103,47 @@ public class UserController {
             Authentication authentication) {
         AuthUser user = (AuthUser) authentication.getPrincipal();
         return userService.search(user.username(), request.search());
+    }
+
+    @PostMapping("/favorite")
+    public ResponseEntity<Void> favorite(@Valid @RequestBody ToUserRequest request, Authentication authentication) {
+        AuthUser user = (AuthUser) authentication.getPrincipal();
+        userService.favorite(user.username(), request.toUser());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/unfavorite")
+    public ResponseEntity<Void> unfavorite(@Valid @RequestBody ToUserRequest request, Authentication authentication) {
+        AuthUser user = (AuthUser) authentication.getPrincipal();
+        userService.unfavorite(user.username(), request.toUser());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/favoriters")
+    public List<FavoriterResponse> favoriters(
+            @Valid @RequestBody UsernameRequest request,
+            Authentication authentication) {
+        AuthUser user = (AuthUser) authentication.getPrincipal();
+        return userService.favoriters(user.username(), request.username());
+    }
+
+    @PostMapping("/favoriting")
+    public List<FavoritingResponse> favoriting(
+            @Valid @RequestBody UsernameRequest request,
+            Authentication authentication) {
+        AuthUser user = (AuthUser) authentication.getPrincipal();
+        return userService.favoriting(user.username(), request.username());
+    }
+
+    @GetMapping("/notifications")
+    public List<NotificationResponse> notifications(Authentication authentication) {
+        AuthUser user = (AuthUser) authentication.getPrincipal();
+        return notificationService.notifications(user.username());
+    }
+
+    @GetMapping("/getNotificationCount")
+    public NotificationCountResponse notificationCount(Authentication authentication) {
+        AuthUser user = (AuthUser) authentication.getPrincipal();
+        return new NotificationCountResponse(notificationService.unreadCount(user.username()));
     }
 }

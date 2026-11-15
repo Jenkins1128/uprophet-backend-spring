@@ -14,6 +14,9 @@ public interface QuoteRepository extends JpaRepository<Quote, Long> {
 
     List<Quote> findByUserNameOrderByIdDesc(String userName);
 
+    @Query("select q.id from Quote q where q.userName = :userName")
+    List<Long> findIdsByUserName(@Param("userName") String userName);
+
     @Query(value = "select id from quotes order by rand() limit 20", nativeQuery = true)
     List<Number> findRandomIds();
 }

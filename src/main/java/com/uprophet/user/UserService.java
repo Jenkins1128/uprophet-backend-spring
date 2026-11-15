@@ -1,6 +1,8 @@
 package com.uprophet.user;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -10,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.uprophet.user.dto.CurrentUserInfoResponse;
+import com.uprophet.user.dto.FavoriterResponse;
+import com.uprophet.user.dto.FavoritingResponse;
 import com.uprophet.user.dto.PhotoResponse;
 import com.uprophet.user.dto.SearchResultResponse;
 import com.uprophet.user.dto.UserInfoResponse;
@@ -19,10 +23,15 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final FavoritingRepository favoritingRepository;
+    private final FavoriteNotificationRepository favoriteNotificationRepository;
 
-    public UserService(UserRepository userRepository, FavoritingRepository favoritingRepository) {
+    public UserService(
+            UserRepository userRepository,
+            FavoritingRepository favoritingRepository,
+            FavoriteNotificationRepository favoriteNotificationRepository) {
         this.userRepository = userRepository;
         this.favoritingRepository = favoritingRepository;
+        this.favoriteNotificationRepository = favoriteNotificationRepository;
     }
 
     @Transactional(readOnly = true)
@@ -90,6 +99,60 @@ public class UserService {
                         user.getUserName(),
                         currentUsername,
                         followed.contains(user.getUserName())))
+                .toList();
+    }
+
+    @Transactional
+    public void favorite(String fromUser, String toUser) {
+        if (favoritingRepository.existsByFromUserAndToUser(fromUser, toUser)) {
+            return;
+        }
+        Favoriting favoriting = new Favoriting();
+        favoriting.setFromUser(fromUser);
+        favoriting.setToUser(toUser);
+        favoritingRepository.save(favoriting);
+
+        FavoriteNotification notification = new FavoriteNotification();
+        notification.setNotice(fromUser + " favorited you.");
+        notification.setToUser(toUser);
+        notification.setReadFlag(0);
+        notification.setDate(LocalDateTime.now(ZoneOffset.UTC).withNano(0));
+        favoriteNotificationRepository.save(notification);
+    }
+
+    @Transactional
+    public void unfavorite(String fromUser, String toUser) {
+        favoritingRepository.findById(new FavoritingId(fromUser, toUser))
+                .ifPresent(favoriting -> favoritingRepository.delete(favoriting));
+    }
+
+    @Transactional(readOnly = true)
+    public List<FavoriterResponse> favoriters(String currentUsername, String username) {
+        List<String> names = favoritingRepository.findFromUsersByToUser(username).stream()
+                .filter(name -> name != null && !name.isBlank())
+                .toList();
+        if (names.isEmpty()) {
+            return List.of();
+        }
+        Set<String> followed = new HashSet<>(
+                favoritingRepository.findToUsersByFromUserAndToUserIn(currentUsername, names));
+        return names.stream()
+                .map(name -> new FavoriterResponse(name, currentUsername, followed.contains(name)))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<FavoritingResponse> favoriting(String currentUsername, String username) {
+        List<String> names = favoritingRepository.findToUsersByFromUser(username).stream()
+                .filter(name -> name != null && !name.isBlank())
+                .toList();
+        if (names.isEmpty()) {
+            return List.of();
+        }
+        Set<String> followed = new HashSet<>(
+                favoritingRepository.findToUsersByFromUserAndToUserIn(currentUsername, names));
+        return names.stream()
+                .map(name -> new FavoritingResponse(name, currentUsername, followed.contains(name)))
                 .toList();
     }
 

@@ -14,6 +14,8 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.uprophet.common.error.ApiException;
+import com.uprophet.quote.dto.CommentResponse;
 import com.uprophet.quote.dto.HomeQuoteResponse;
 import com.uprophet.user.FavoritingRepository;
 
@@ -25,14 +27,20 @@ public class QuoteService {
     private final FavoritingRepository favoritingRepository;
     private final QuoteRepository quoteRepository;
     private final LikeRepository likeRepository;
+    private final CommentRepository commentRepository;
+    private final QuoteNotificationRepository quoteNotificationRepository;
 
     public QuoteService(
             FavoritingRepository favoritingRepository,
             QuoteRepository quoteRepository,
-            LikeRepository likeRepository) {
+            LikeRepository likeRepository,
+            CommentRepository commentRepository,
+            QuoteNotificationRepository quoteNotificationRepository) {
         this.favoritingRepository = favoritingRepository;
         this.quoteRepository = quoteRepository;
         this.likeRepository = likeRepository;
+        this.commentRepository = commentRepository;
+        this.quoteNotificationRepository = quoteNotificationRepository;
     }
 
     @Transactional(readOnly = true)
@@ -90,6 +98,67 @@ public class QuoteService {
                 format(saved.getDatePosted()),
                 0,
                 false);
+    }
+
+    @Transactional
+    public void like(long userId, String username, long quoteId) {
+        LikeId id = new LikeId(userId, quoteId);
+        if (likeRepository.existsById(id)) {
+            return;
+        }
+        Like like = new Like();
+        like.setUsersId(userId);
+        like.setQuotesId(quoteId);
+        likeRepository.save(like);
+        notify(username + " liked your quote.", quoteId);
+    }
+
+    @Transactional
+    public void unlike(long userId, long quoteId) {
+        likeRepository.findById(new LikeId(userId, quoteId)).ifPresent(like -> likeRepository.delete(like));
+    }
+
+    @Transactional(readOnly = true)
+    public HomeQuoteResponse quote(long userId, long quoteId) {
+        Quote quote = quoteRepository.findById(quoteId)
+                .orElseThrow(() -> new ApiException("Quote not found", 404));
+        return toResponses(userId, List.of(quote)).get(0);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CommentResponse> comments(long quoteId) {
+        return commentRepository.findByQuotesIdOrderByIdDesc(quoteId).stream()
+                .map(comment -> new CommentResponse(
+                        comment.getId(),
+                        comment.getComment(),
+                        comment.getCommenter(),
+                        format(comment.getDatePosted())))
+                .toList();
+    }
+
+    @Transactional
+    public CommentResponse addComment(String username, long quoteId, String text) {
+        LocalDateTime postedAt = LocalDateTime.now(ZoneOffset.UTC).withNano(0);
+        Comment comment = new Comment();
+        comment.setQuotesId(quoteId);
+        comment.setComment(text);
+        comment.setCommenter(username);
+        comment.setDatePosted(postedAt);
+        Comment saved = commentRepository.save(comment);
+        if (saved.getId() == null) {
+            throw new IllegalStateException("Failed to retrieve added comment");
+        }
+        notify(username + " commented on your quote.", quoteId);
+        return new CommentResponse(saved.getId(), saved.getComment(), saved.getCommenter(), format(postedAt));
+    }
+
+    private void notify(String notice, long quoteId) {
+        QuoteNotification notification = new QuoteNotification();
+        notification.setNotice(notice);
+        notification.setQuotesId(quoteId);
+        notification.setReadFlag(0);
+        notification.setDate(LocalDateTime.now(ZoneOffset.UTC).withNano(0));
+        quoteNotificationRepository.save(notification);
     }
 
     private List<HomeQuoteResponse> toResponses(long userId, List<Quote> quotes) {

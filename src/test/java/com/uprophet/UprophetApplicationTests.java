@@ -6,8 +6,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import com.uprophet.auth.LoginRepository;
 import com.uprophet.quote.LikeRepository;
+import com.uprophet.quote.QuoteNotificationRepository;
 import com.uprophet.quote.QuoteRepository;
+import com.uprophet.quote.CommentRepository;
 import com.uprophet.user.FavoritingRepository;
+import com.uprophet.user.FavoriteNotificationRepository;
 import com.uprophet.user.UserRepository;
 
 @SpringBootTest(properties = "spring.autoconfigure.exclude="
@@ -31,6 +34,15 @@ class UprophetApplicationTests {
 
     @MockitoBean
     private FavoritingRepository favoritingRepository;
+
+    @MockitoBean
+    private CommentRepository commentRepository;
+
+    @MockitoBean
+    private QuoteNotificationRepository quoteNotificationRepository;
+
+    @MockitoBean
+    private FavoriteNotificationRepository favoriteNotificationRepository;
 
     @Test
     void contextLoads() {

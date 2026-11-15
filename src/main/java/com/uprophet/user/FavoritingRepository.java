@@ -12,6 +12,9 @@ public interface FavoritingRepository extends JpaRepository<Favoriting, Favoriti
     @Query("select f.toUser from Favoriting f where f.fromUser = :username")
     List<String> findToUsersByFromUser(@Param("username") String username);
 
+    @Query("select f.fromUser from Favoriting f where f.toUser = :username")
+    List<String> findFromUsersByToUser(@Param("username") String username);
+
     long countByToUser(String toUser);
 
     long countByFromUser(String fromUser);
