@@ -3,6 +3,7 @@ package com.uprophet.quote;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -94,5 +96,46 @@ class QuoteControllerTest {
                 .andExpect(jsonPath("$[0].userName").value("bea"))
                 .andExpect(jsonPath("$[0].likeCount").value(4))
                 .andExpect(jsonPath("$[0].didLike").value(true));
+    }
+
+    @Test
+    void createQuoteWithoutACookieIsUnauthorized() throws Exception {
+        mockMvc.perform(post("/api/createQuote")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Hello\",\"quote\":\"World\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Not authorized, no token"));
+    }
+
+    @Test
+    void createQuoteReturnsTheNewQuote() throws Exception {
+        when(quoteService.create("ada", "Hello", "World")).thenReturn(
+                new HomeQuoteResponse(11L, "ada", "Hello", "World", "2024-02-02 03:04:05", 0L, false));
+        var signedIn = authentication(new UsernamePasswordAuthenticationToken(
+                new AuthUser(42L, "ada"), null, List.of()));
+
+        mockMvc.perform(post("/api/createQuote").with(signedIn)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Hello\",\"quote\":\"World\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(11))
+                .andExpect(jsonPath("$.userName").value("ada"))
+                .andExpect(jsonPath("$.title").value("Hello"))
+                .andExpect(jsonPath("$.quote").value("World"))
+                .andExpect(jsonPath("$.datePosted").value("2024-02-02 03:04:05"))
+                .andExpect(jsonPath("$.likeCount").value(0))
+                .andExpect(jsonPath("$.didLike").value(false));
+    }
+
+    @Test
+    void createQuoteRejectsABlankTitle() throws Exception {
+        var signedIn = authentication(new UsernamePasswordAuthenticationToken(
+                new AuthUser(42L, "ada"), null, List.of()));
+
+        mockMvc.perform(post("/api/createQuote").with(signedIn)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"\",\"quote\":\"World\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Validation failed"));
     }
 }

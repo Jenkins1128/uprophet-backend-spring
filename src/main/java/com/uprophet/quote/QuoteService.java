@@ -1,6 +1,7 @@
 package com.uprophet.quote;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -68,6 +69,27 @@ public class QuoteService {
             return List.of();
         }
         return toResponses(userId, new ArrayList<>(quoteRepository.findAllById(ids)));
+    }
+
+    @Transactional
+    public HomeQuoteResponse create(String username, String title, String quoteText) {
+        Quote quote = new Quote();
+        quote.setUserName(username);
+        quote.setTitle(title);
+        quote.setQuote(quoteText);
+        quote.setDatePosted(LocalDateTime.now(ZoneOffset.UTC).withNano(0));
+        Quote saved = quoteRepository.save(quote);
+        if (saved.getId() == null) {
+            throw new IllegalStateException("Failed to retrieve created quote");
+        }
+        return new HomeQuoteResponse(
+                saved.getId(),
+                saved.getUserName(),
+                saved.getTitle(),
+                saved.getQuote(),
+                format(saved.getDatePosted()),
+                0,
+                false);
     }
 
     private List<HomeQuoteResponse> toResponses(long userId, List<Quote> quotes) {

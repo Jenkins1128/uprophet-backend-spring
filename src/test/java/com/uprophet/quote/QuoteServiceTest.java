@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.List;
 
@@ -118,6 +119,33 @@ class QuoteServiceTest {
         assertThat(quoteService.explore(42L)).isEmpty();
         verify(likeRepository, never()).countByQuoteIds(any());
         verify(likeRepository, never()).findLikedQuoteIds(anyLong(), any());
+    }
+
+    @Test
+    void createStoresTheSignedInUsersQuote() {
+        when(quoteRepository.save(any(Quote.class))).thenAnswer(invocation -> {
+            Quote quote = invocation.getArgument(0);
+            quote.setId(11L);
+            return quote;
+        });
+
+        HomeQuoteResponse created = quoteService.create("ada", "Hello", "World");
+
+        ArgumentCaptor<Quote> saved = ArgumentCaptor.forClass(Quote.class);
+        verify(quoteRepository).save(saved.capture());
+        assertThat(saved.getValue().getUserName()).isEqualTo("ada");
+        assertThat(saved.getValue().getTitle()).isEqualTo("Hello");
+        assertThat(saved.getValue().getQuote()).isEqualTo("World");
+        assertThat(saved.getValue().getDatePosted())
+                .isBetween(LocalDateTime.now(ZoneOffset.UTC).minusSeconds(2), LocalDateTime.now(ZoneOffset.UTC).plusSeconds(1));
+        assertThat(created).isEqualTo(new HomeQuoteResponse(
+                11L,
+                "ada",
+                "Hello",
+                "World",
+                saved.getValue().getDatePosted().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
+                0L,
+                false));
     }
 
     private static Quote quote(long id, String userName, String title, String text, LocalDateTime postedAt) {
