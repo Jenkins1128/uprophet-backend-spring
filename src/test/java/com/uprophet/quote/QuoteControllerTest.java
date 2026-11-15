@@ -73,4 +73,26 @@ class QuoteControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].userName").value("ada"));
     }
+
+    @Test
+    void exploreWithoutACookieIsUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/explore"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Not authorized, no token"));
+    }
+
+    @Test
+    void exploreReturnsTheServiceResult() throws Exception {
+        when(quoteService.explore(42L)).thenReturn(List.of(
+                new HomeQuoteResponse(9L, "bea", "Title", "words", "2024-01-01 00:00:00", 4L, true)));
+        var signedIn = authentication(new UsernamePasswordAuthenticationToken(
+                new AuthUser(42L, "ada"), null, List.of()));
+
+        mockMvc.perform(get("/api/explore").with(signedIn))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(9))
+                .andExpect(jsonPath("$[0].userName").value("bea"))
+                .andExpect(jsonPath("$[0].likeCount").value(4))
+                .andExpect(jsonPath("$[0].didLike").value(true));
+    }
 }

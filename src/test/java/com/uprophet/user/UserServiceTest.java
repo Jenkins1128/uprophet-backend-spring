@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
@@ -14,9 +15,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Pageable;
 
 import com.uprophet.user.dto.CurrentUserInfoResponse;
 import com.uprophet.user.dto.PhotoResponse;
+import com.uprophet.user.dto.SearchResultResponse;
 import com.uprophet.user.dto.UserInfoResponse;
 
 @ExtendWith(MockitoExtension.class)
@@ -113,5 +116,33 @@ class UserServiceTest {
         assertThat(ada.getPhotoName()).isEqualTo("pic.png");
         assertThat(new String(ada.getPhoto(), StandardCharsets.UTF_8)).isEqualTo("abc123");
         verify(userRepository).save(ada);
+    }
+
+    @Test
+    void searchMarksFollowedUsers() {
+        when(userRepository.searchByUserName(org.mockito.ArgumentMatchers.eq("ad"), any(Pageable.class)))
+                .thenReturn(List.of(user(1L, "ada"), user(3L, "cyd")));
+        when(favoritingRepository.findToUsersByFromUserAndToUserIn("bea", List.of("ada", "cyd")))
+                .thenReturn(List.of("ada"));
+
+        assertThat(userService.search("bea", "ad")).containsExactly(
+                new SearchResultResponse(1L, "ada", "bea", true),
+                new SearchResultResponse(3L, "cyd", "bea", false));
+    }
+
+    @Test
+    void searchSkipsFollowsWhenNobodyMatches() {
+        when(userRepository.searchByUserName(org.mockito.ArgumentMatchers.eq("zzz"), any(Pageable.class)))
+                .thenReturn(List.of());
+
+        assertThat(userService.search("bea", "zzz")).isEmpty();
+        verify(favoritingRepository, never()).findToUsersByFromUserAndToUserIn(any(), any());
+    }
+
+    private static User user(long id, String userName) {
+        User user = new User();
+        user.setId(id);
+        user.setUserName(userName);
+        return user;
     }
 }

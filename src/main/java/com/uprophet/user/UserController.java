@@ -19,6 +19,8 @@ import com.uprophet.user.dto.BioRequest;
 import com.uprophet.user.dto.CurrentUserInfoResponse;
 import com.uprophet.user.dto.PhotoRequest;
 import com.uprophet.user.dto.PhotoResponse;
+import com.uprophet.user.dto.SearchRequest;
+import com.uprophet.user.dto.SearchResultResponse;
 import com.uprophet.user.dto.UserInfoResponse;
 import com.uprophet.user.dto.UsernameRequest;
 
@@ -86,5 +88,13 @@ public class UserController {
         AuthUser user = (AuthUser) authentication.getPrincipal();
         userService.savePhoto(user.username(), request.name(), request.image());
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/search")
+    public List<SearchResultResponse> search(
+            @Valid @RequestBody SearchRequest request,
+            Authentication authentication) {
+        AuthUser user = (AuthUser) authentication.getPrincipal();
+        return userService.search(user.username(), request.search());
     }
 }

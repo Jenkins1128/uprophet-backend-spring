@@ -29,6 +29,7 @@ import com.uprophet.quote.QuoteService;
 import com.uprophet.quote.dto.HomeQuoteResponse;
 import com.uprophet.user.dto.CurrentUserInfoResponse;
 import com.uprophet.user.dto.PhotoResponse;
+import com.uprophet.user.dto.SearchResultResponse;
 import com.uprophet.user.dto.UserInfoResponse;
 
 @SpringBootTest(properties = "spring.autoconfigure.exclude="
@@ -165,6 +166,30 @@ class UserControllerTest {
                 .andExpect(status().isOk());
 
         verify(userService).savePhoto("ada", "pic.png", "abc123");
+    }
+
+    @Test
+    void searchWithoutACookieIsUnauthorized() throws Exception {
+        mockMvc.perform(post("/api/search")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"search\":\"ada\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Not authorized, no token"));
+    }
+
+    @Test
+    void searchReturnsUserNameAndFollowStatus() throws Exception {
+        when(userService.search("ada", "be")).thenReturn(List.of(
+                new SearchResultResponse(3L, "bea", "ada", true)));
+
+        mockMvc.perform(post("/api/search").with(signedIn())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"search\":\"be\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(3))
+                .andExpect(jsonPath("$[0].user_name").value("bea"))
+                .andExpect(jsonPath("$[0].currentUser").value("ada"))
+                .andExpect(jsonPath("$[0].didFavorite").value(true));
     }
 
     private static org.springframework.test.web.servlet.request.RequestPostProcessor signedIn() {

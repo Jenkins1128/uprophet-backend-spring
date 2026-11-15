@@ -25,4 +25,10 @@ public class QuoteController {
         AuthUser user = (AuthUser) authentication.getPrincipal();
         return quoteService.home(user.id(), user.username());
     }
+
+    @GetMapping("/explore")
+    public List<HomeQuoteResponse> explore(Authentication authentication) {
+        AuthUser user = (AuthUser) authentication.getPrincipal();
+        return quoteService.explore(user.id());
+    }
 }

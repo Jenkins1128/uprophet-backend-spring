@@ -1,5 +1,6 @@
 package com.uprophet.user;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,4 +17,9 @@ public interface FavoritingRepository extends JpaRepository<Favoriting, Favoriti
     long countByFromUser(String fromUser);
 
     boolean existsByFromUserAndToUser(String fromUser, String toUser);
+
+    @Query("select f.toUser from Favoriting f where f.fromUser = :username and f.toUser in :names")
+    List<String> findToUsersByFromUserAndToUserIn(
+            @Param("username") String username,
+            @Param("names") Collection<String> names);
 }

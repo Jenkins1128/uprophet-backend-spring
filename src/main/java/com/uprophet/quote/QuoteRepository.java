@@ -13,4 +13,7 @@ public interface QuoteRepository extends JpaRepository<Quote, Long> {
     List<Object[]> findLatestIdsByUserNames(@Param("names") Collection<String> names);
 
     List<Quote> findByUserNameOrderByIdDesc(String userName);
+
+    @Query(value = "select id from quotes order by rand() limit 20", nativeQuery = true)
+    List<Number> findRandomIds();
 }

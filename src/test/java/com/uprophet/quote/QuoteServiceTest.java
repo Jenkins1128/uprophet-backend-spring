@@ -96,6 +96,30 @@ class QuoteServiceTest {
         verify(likeRepository, never()).findLikedQuoteIds(anyLong(), any());
     }
 
+    @Test
+    void exploreKeepsTheLoadedOrderAndLikeState() {
+        when(quoteRepository.findRandomIds()).thenReturn(List.of(2L, 9L));
+        when(quoteRepository.findAllById(List.of(2L, 9L))).thenReturn(List.of(
+                quote(2L, "ada", "Older id", "first", LocalDateTime.of(2024, 6, 1, 0, 0, 0)),
+                quote(9L, "bea", "Newer id", "second", LocalDateTime.of(2024, 1, 1, 0, 0, 0))));
+        when(likeRepository.countByQuoteIds(List.of(2L, 9L)))
+                .thenReturn(List.<Object[]>of(new Object[] {9L, 4L}));
+        when(likeRepository.findLikedQuoteIds(42L, List.of(2L, 9L))).thenReturn(List.of(2L));
+
+        assertThat(quoteService.explore(42L)).containsExactly(
+                new HomeQuoteResponse(2L, "ada", "Older id", "first", "2024-06-01 00:00:00", 0L, true),
+                new HomeQuoteResponse(9L, "bea", "Newer id", "second", "2024-01-01 00:00:00", 4L, false));
+    }
+
+    @Test
+    void exploreIsEmptyWhenThereAreNoQuotes() {
+        when(quoteRepository.findRandomIds()).thenReturn(List.of());
+
+        assertThat(quoteService.explore(42L)).isEmpty();
+        verify(likeRepository, never()).countByQuoteIds(any());
+        verify(likeRepository, never()).findLikedQuoteIds(anyLong(), any());
+    }
+
     private static Quote quote(long id, String userName, String title, String text, LocalDateTime postedAt) {
         Quote quote = new Quote();
         quote.setId(id);

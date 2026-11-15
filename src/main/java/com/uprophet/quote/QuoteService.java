@@ -56,6 +56,20 @@ public class QuoteService {
         return toResponses(userId, quotes);
     }
 
+    @Transactional(readOnly = true)
+    public List<HomeQuoteResponse> explore(long userId) {
+        List<Long> ids = new ArrayList<>();
+        for (Number id : quoteRepository.findRandomIds()) {
+            if (id != null) {
+                ids.add(id.longValue());
+            }
+        }
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        return toResponses(userId, new ArrayList<>(quoteRepository.findAllById(ids)));
+    }
+
     private List<HomeQuoteResponse> toResponses(long userId, List<Quote> quotes) {
         List<Long> ids = quotes.stream().map(quote -> quote.getId()).toList();
         Map<Long, Long> likeCounts = likeCounts(ids);
