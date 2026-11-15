@@ -17,6 +17,9 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.uprophet.common.error.ApiException;
+import com.uprophet.quote.LikeRepository;
+import com.uprophet.quote.QuoteRepository;
+import com.uprophet.user.FavoritingRepository;
 import com.uprophet.user.UserRepository;
 
 @SpringBootTest(properties = "spring.autoconfigure.exclude="
@@ -38,6 +41,15 @@ class AuthControllerTest {
 
     @MockitoBean
     private LoginRepository loginRepository;
+
+    @MockitoBean
+    private QuoteRepository quoteRepository;
+
+    @MockitoBean
+    private LikeRepository likeRepository;
+
+    @MockitoBean
+    private FavoritingRepository favoritingRepository;
 
     @Test
     void signinSetsTheAccessCookie() throws Exception {
