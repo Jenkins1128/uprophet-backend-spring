@@ -20,6 +20,7 @@ import com.uprophet.auth.LoginRepository;
 import com.uprophet.auth.security.AuthUser;
 import com.uprophet.quote.dto.HomeQuoteResponse;
 import com.uprophet.user.UserRepository;
+import com.uprophet.user.UserService;
 
 @SpringBootTest(properties = "spring.autoconfigure.exclude="
         + "org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration,"
@@ -34,6 +35,9 @@ class QuoteControllerTest {
 
     @MockitoBean
     private QuoteService quoteService;
+
+    @MockitoBean
+    private UserService userService;
 
     @MockitoBean
     private UserRepository userRepository;

@@ -11,4 +11,6 @@ public interface QuoteRepository extends JpaRepository<Quote, Long> {
 
     @Query("select q.userName, max(q.id) from Quote q where q.userName in :names group by q.userName")
     List<Object[]> findLatestIdsByUserNames(@Param("names") Collection<String> names);
+
+    List<Quote> findByUserNameOrderByIdDesc(String userName);
 }

@@ -42,10 +42,24 @@ public class QuoteService {
         if (ids.isEmpty()) {
             return List.of();
         }
-        Map<Long, Long> likeCounts = likeCounts(ids);
-        Set<Long> liked = new HashSet<>(likeRepository.findLikedQuoteIds(userId, ids));
         List<Quote> quotes = new ArrayList<>(quoteRepository.findAllById(ids));
         quotes.sort(Comparator.comparing(quote -> quote.getDatePosted(), Comparator.nullsLast(Comparator.reverseOrder())));
+        return toResponses(userId, quotes);
+    }
+
+    @Transactional(readOnly = true)
+    public List<HomeQuoteResponse> profile(long userId, String username) {
+        List<Quote> quotes = quoteRepository.findByUserNameOrderByIdDesc(username);
+        if (quotes.isEmpty()) {
+            return List.of();
+        }
+        return toResponses(userId, quotes);
+    }
+
+    private List<HomeQuoteResponse> toResponses(long userId, List<Quote> quotes) {
+        List<Long> ids = quotes.stream().map(quote -> quote.getId()).toList();
+        Map<Long, Long> likeCounts = likeCounts(ids);
+        Set<Long> liked = new HashSet<>(likeRepository.findLikedQuoteIds(userId, ids));
         return quotes.stream()
                 .map(quote -> new HomeQuoteResponse(
                         quote.getId(),
