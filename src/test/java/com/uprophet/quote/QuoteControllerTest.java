@@ -24,7 +24,7 @@ import com.uprophet.auth.LoginRepository;
 import com.uprophet.auth.security.AuthUser;
 import com.uprophet.quote.dto.CommentResponse;
 import com.uprophet.quote.dto.HomeQuoteResponse;
-import com.uprophet.user.NotificationService;
+import com.uprophet.notification.NotificationService;
 import com.uprophet.user.UserRepository;
 import com.uprophet.user.UserService;
 

@@ -1,4 +1,4 @@
-package com.uprophet.user;
+package com.uprophet.notification;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -10,10 +10,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.uprophet.notification.dto.NotificationResponse;
 import com.uprophet.quote.QuoteNoticeRow;
 import com.uprophet.quote.QuoteNotificationRepository;
 import com.uprophet.quote.QuoteRepository;
-import com.uprophet.user.dto.NotificationResponse;
+import com.uprophet.user.FavoriteNotification;
+import com.uprophet.user.FavoriteNotificationRepository;
 
 @Service
 public class NotificationService {

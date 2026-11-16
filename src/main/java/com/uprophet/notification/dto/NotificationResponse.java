@@ -1,4 +1,4 @@
-package com.uprophet.user.dto;
+package com.uprophet.notification.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 

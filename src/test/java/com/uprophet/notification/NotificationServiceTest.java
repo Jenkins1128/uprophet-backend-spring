@@ -1,4 +1,4 @@
-package com.uprophet.user;
+package com.uprophet.notification;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -17,10 +17,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageRequest;
 
+import com.uprophet.notification.dto.NotificationResponse;
 import com.uprophet.quote.QuoteNoticeRow;
 import com.uprophet.quote.QuoteNotificationRepository;
 import com.uprophet.quote.QuoteRepository;
-import com.uprophet.user.dto.NotificationResponse;
+import com.uprophet.user.FavoriteNotification;
+import com.uprophet.user.FavoriteNotificationRepository;
 
 @ExtendWith(MockitoExtension.class)
 class NotificationServiceTest {

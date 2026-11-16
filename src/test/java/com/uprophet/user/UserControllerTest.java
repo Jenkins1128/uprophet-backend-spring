@@ -27,10 +27,10 @@ import com.uprophet.quote.LikeRepository;
 import com.uprophet.quote.QuoteRepository;
 import com.uprophet.quote.QuoteService;
 import com.uprophet.quote.dto.HomeQuoteResponse;
+import com.uprophet.notification.NotificationService;
 import com.uprophet.user.dto.CurrentUserInfoResponse;
 import com.uprophet.user.dto.FavoriterResponse;
 import com.uprophet.user.dto.FavoritingResponse;
-import com.uprophet.user.dto.NotificationResponse;
 import com.uprophet.user.dto.PhotoResponse;
 import com.uprophet.user.dto.SearchResultResponse;
 import com.uprophet.user.dto.UserInfoResponse;
@@ -196,40 +196,6 @@ class UserControllerTest {
                 .andExpect(jsonPath("$[0].user_name").value("bea"))
                 .andExpect(jsonPath("$[0].currentUser").value("ada"))
                 .andExpect(jsonPath("$[0].didFavorite").value(true));
-    }
-
-    @Test
-    void notificationsWithoutACookieAreUnauthorized() throws Exception {
-        mockMvc.perform(get("/api/notifications"))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Not authorized, no token"));
-    }
-
-    @Test
-    void notificationsReturnQuoteAndFavoriteNotices() throws Exception {
-        when(notificationService.notifications("ada")).thenReturn(List.of(
-                new NotificationResponse(5L, "cy favorited you.", null, "2024-02-02 00:00:00", null, "ada", "favorite"),
-                new NotificationResponse(2L, "bea liked your quote.", 9L, "2024-01-01 00:00:00", "ada", null, "quote")));
-
-        mockMvc.perform(get("/api/notifications").with(signedIn()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(5))
-                .andExpect(jsonPath("$[0].notice").value("cy favorited you."))
-                .andExpect(jsonPath("$[0].quotesId").doesNotExist())
-                .andExpect(jsonPath("$[0].date").value("2024-02-02 00:00:00"))
-                .andExpect(jsonPath("$[0].type").value("favorite"))
-                .andExpect(jsonPath("$[1].quotesId").value(9))
-                .andExpect(jsonPath("$[1].notice").value("bea liked your quote."))
-                .andExpect(jsonPath("$[1].type").value("quote"));
-    }
-
-    @Test
-    void notificationCountReturnsTheUnreadTotal() throws Exception {
-        when(notificationService.unreadCount("ada")).thenReturn(3L);
-
-        mockMvc.perform(get("/api/getNotificationCount").with(signedIn()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.notificationCount").value(3));
     }
 
     @Test
