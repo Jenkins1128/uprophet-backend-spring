@@ -1,0 +1,35 @@
+# Copy this file to application-local.yml in this same folder and fill in the values.
+# It overrides application.yml when the prod profile is not active. It is gitignored.
+#
+# On Railway, set SPRING_PROFILES_ACTIVE=prod and set the environment variables named below.
+# ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET, SITE_KEY, and NONCE_SALT must match the
+# existing Node backend or current passwords and sessions will not verify.
+
+server:
+  port: 3001
+
+spring:
+  config:
+    activate:
+      on-profile: "!prod"
+  datasource:
+    # Railway: MYSQLHOST, MYSQLPORT, MYSQLUSER, MYSQLPASSWORD, MYSQLDATABASE
+    # Local fallbacks: HOST, USER_DEV, PASSWORD_DEV, DATABASE_DEV
+    url: jdbc:mysql://localhost:3306/uprophet?serverTimezone=UTC
+    username: your_db_user
+    password: your_db_password
+
+app:
+  resend:
+    api-key: your_resend_api_key # RESEND_API_KEY
+  cors:
+    allowed-origins: http://localhost:3000,https://uprophet.com # ALLOWED_ORIGINS
+  jwt:
+    access-token-secret: your_access_secret # ACCESS_TOKEN_SECRET
+    access-token-life: 120s # ACCESS_TOKEN_LIFE
+    refresh-token-secret: your_refresh_secret # REFRESH_TOKEN_SECRET
+    refresh-token-life: 365d # REFRESH_TOKEN_LIFE
+  password:
+    # Quote these if the value contains #. YAML treats an unquoted # as a comment.
+    site-key: "your_site_key" # SITE_KEY
+    nonce-salt: "your_nonce_salt" # NONCE_SALT

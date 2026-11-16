@@ -1,0 +1,75 @@
+{
+  "groups": [
+    {
+      "name": "app",
+      "type": "com.uprophet.config.AppProperties",
+      "sourceType": "com.uprophet.config.AppProperties"
+    },
+    {
+      "name": "app.cors",
+      "type": "com.uprophet.config.AppProperties$Cors",
+      "sourceType": "com.uprophet.config.AppProperties",
+      "sourceMethod": "cors()"
+    },
+    {
+      "name": "app.jwt",
+      "type": "com.uprophet.config.AppProperties$Jwt",
+      "sourceType": "com.uprophet.config.AppProperties",
+      "sourceMethod": "jwt()"
+    },
+    {
+      "name": "app.password",
+      "type": "com.uprophet.config.AppProperties$Password",
+      "sourceType": "com.uprophet.config.AppProperties",
+      "sourceMethod": "password()"
+    },
+    {
+      "name": "app.resend",
+      "type": "com.uprophet.config.AppProperties$Resend",
+      "sourceType": "com.uprophet.config.AppProperties",
+      "sourceMethod": "resend()"
+    }
+  ],
+  "properties": [
+    {
+      "name": "app.cors.allowed-origins",
+      "type": "java.lang.String",
+      "sourceType": "com.uprophet.config.AppProperties$Cors"
+    },
+    {
+      "name": "app.jwt.access-token-life",
+      "type": "java.lang.String",
+      "sourceType": "com.uprophet.config.AppProperties$Jwt"
+    },
+    {
+      "name": "app.jwt.access-token-secret",
+      "type": "java.lang.String",
+      "sourceType": "com.uprophet.config.AppProperties$Jwt"
+    },
+    {
+      "name": "app.jwt.refresh-token-life",
+      "type": "java.lang.String",
+      "sourceType": "com.uprophet.config.AppProperties$Jwt"
+    },
+    {
+      "name": "app.jwt.refresh-token-secret",
+      "type": "java.lang.String",
+      "sourceType": "com.uprophet.config.AppProperties$Jwt"
+    },
+    {
+      "name": "app.password.nonce-salt",
+      "type": "java.lang.String",
+      "sourceType": "com.uprophet.config.AppProperties$Password"
+    },
+    {
+      "name": "app.password.site-key",
+      "type": "java.lang.String",
+      "sourceType": "com.uprophet.config.AppProperties$Password"
+    },
+    {
+      "name": "app.resend.api-key",
+      "type": "java.lang.String",
+      "sourceType": "com.uprophet.config.AppProperties$Resend"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
 /**
- * Quote and favorite notifications, including the unread count.
+ * The notification list and unread count.
  */
 package com.uprophet.notification;
