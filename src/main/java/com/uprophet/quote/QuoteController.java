@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -77,5 +78,11 @@ public class QuoteController {
     public CommentResponse addComment(@Valid @RequestBody AddCommentRequest request, Authentication authentication) {
         AuthUser user = (AuthUser) authentication.getPrincipal();
         return quoteService.addComment(user.username(), request.quoteId(), request.comment());
+    }
+
+    @DeleteMapping("/deleteQuote")
+    public ResponseEntity<Void> delete(@Valid @RequestBody QuoteIdRequest request) {
+        quoteService.delete(request.quoteId());
+        return ResponseEntity.ok().build();
     }
 }

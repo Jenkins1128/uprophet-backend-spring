@@ -3,6 +3,7 @@ package com.uprophet.quote;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -198,5 +199,27 @@ class QuoteControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(4))
                 .andExpect(jsonPath("$.comment").value("nice"));
+    }
+
+    @Test
+    void deleteQuoteWithoutACookieIsUnauthorized() throws Exception {
+        mockMvc.perform(delete("/api/deleteQuote")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quoteId\":9}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Not authorized, no token"));
+    }
+
+    @Test
+    void deleteQuoteRemovesTheQuote() throws Exception {
+        var signedIn = authentication(new UsernamePasswordAuthenticationToken(
+                new AuthUser(42L, "ada"), null, List.of()));
+
+        mockMvc.perform(delete("/api/deleteQuote").with(signedIn)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quoteId\":9}"))
+                .andExpect(status().isOk());
+
+        verify(quoteService).delete(9L);
     }
 }

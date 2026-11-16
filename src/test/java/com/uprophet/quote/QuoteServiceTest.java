@@ -233,7 +233,14 @@ class QuoteServiceTest {
         assertThat(created.commenter()).isEqualTo("ada");
         ArgumentCaptor<QuoteNotification> notice = ArgumentCaptor.forClass(QuoteNotification.class);
         verify(quoteNotificationRepository).save(notice.capture());
-        assertThat(notice.getValue()).extracting("notice", "quotesId").containsExactly("ada commented on your quote.", 9L);
+        assertThat(notice.getValue()).extracting("notice", "quotesId")                .containsExactly("ada commented on your quote.", 9L);
+    }
+
+    @Test
+    void deleteRemovesTheQuote() {
+        quoteService.delete(9L);
+
+        verify(quoteRepository).deleteById(9L);
     }
 
     private static Comment comment(long id, String text, String commenter, LocalDateTime postedAt) {

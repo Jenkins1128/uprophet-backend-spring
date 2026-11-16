@@ -152,6 +152,11 @@ public class QuoteService {
         return new CommentResponse(saved.getId(), saved.getComment(), saved.getCommenter(), format(postedAt));
     }
 
+    @Transactional
+    public void delete(long quoteId) {
+        quoteRepository.deleteById(quoteId);
+    }
+
     private void notify(String notice, long quoteId) {
         QuoteNotification notification = new QuoteNotification();
         notification.setNotice(notice);
